@@ -4,7 +4,7 @@ Sources (all public, tiny, no API key):
 1. NASA GISTEMP — global land-ocean temperature anomaly, monthly, 1880-now
    https://data.giss.nasa.gov/gistemp/tabledata_v4/GLB.Ts+dSST.txt
 2. NOAA GML — Mauna Loa CO2 (Keeling curve), monthly, 1958-now
-   https://gml.noaa.gov/webdata/ccgg/trends/co2_mm_mlo.csv
+   https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_mm_mlo.txt
 3. SILSO — monthly sunspot numbers (natural solar variability), 1749-now
    https://www.sidc.be/silso/INFO/snmtotcsv.php
 
@@ -36,7 +36,9 @@ def fetch(name: str) -> pd.DataFrame:
         for c in ("year", "month"):
             df[c] = df[c].astype(int)
         df["date"] = pd.to_datetime(df["date"])
-        return df
+        # order by date: the GISTEMP melt below is month-major, and stale
+        # caches may predate the sorting fix
+        return df.sort_values("date").reset_index(drop=True)
 
     r = requests.get(SOURCES[name], timeout=120)
     r.raise_for_status()
@@ -56,6 +58,8 @@ def fetch(name: str) -> pd.DataFrame:
                      var_name="month", value_name="anomaly")
         df["anomaly"] = df["anomaly"].where(df["anomaly"] > -999) / 100.0  # degC
         df["date"] = pd.to_datetime(dict(year=df["year"], month=df["month"], day=1))
+        # melt emits month-major rows; sort chronologically for all consumers
+        df = df.sort_values("date").reset_index(drop=True)
     elif name == "co2":
         df = pd.read_csv(io.StringIO(r.text), comment="#", sep=r"\s+", header=None,
                          names=["year", "month", "dec_date", "average",

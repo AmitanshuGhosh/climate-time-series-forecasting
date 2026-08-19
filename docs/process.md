@@ -165,10 +165,38 @@ lag-based ML to exploit beyond what SARIMA already models). Reproduce:
   (z=+0.75, trend caught up), 1983 (offset by El Chichon). Plot:
   `results/plots/events.png`.
 - 2025-08-19: Stage 8 done — forecasting (`experiments/forecast.py`):
-  SARIMA vs XGBoost vs LSTM, 10-year holdout (2016-2026). SARIMA wins both
-  series (CO2 MAE 2.13, temp 0.168); XGBoost and LSTM beat persistence on
-  CO2 (MAE 4.55 / 5.10) but lose to persistence on temperature (0.34 / 0.27).
-  Full per-model setup in section 8 above.
+  SARIMA vs XGBoost vs LSTM, 127-month holdout (2016-01 to 2026-07). SARIMA
+  wins both series (CO2 MAE 2.13, temp 0.139); XGBoost and LSTM beat
+  persistence on CO2 (MAE 4.55 / 5.10) but lose to persistence on temperature
+  (0.67 / 0.64). Full per-model setup in section 8 above.
+- 2025-08-19: AUDIT PASS — full reproducibility/correctness audit of the
+  project and report. Fixes applied:
+  * `src/acquire.py`: GISTEMP tidy frame was month-major (pd.melt default),
+    not chronological — this corrupted the GISTEMP forecasting series and the
+    explore overview/zoom plots. Now sorted by date on parse and cache read;
+    cached CSVs rewritten. GISTEMP forecast numbers corrected (SARIMA MAE
+    0.168 -> 0.139; XGBoost 0.341 -> 0.673; LSTM 0.274 -> 0.637). CO2 and
+    sunspot results unchanged.
+  * `experiments/stl_co2.py`: seasonal amplitude restricted to full calendar
+    years (1959-2025, n=67) — the partial 2026 year (Jan-Jul) missed the
+    Sep-Oct trough and produced an artifact (3.4 ppm vs ~6.5); slope
+    unchanged (+0.146), MK p 6.8e-11 -> 8.9e-12.
+  * `experiments/explore.py`: summary-stats "end" and "latest" now taken
+    from the latest valid observation (GISTEMP: 2026-07-01 / 1.23, not
+    2026-12-01 / 1.06).
+  * `experiments/events.py`: near-miss z-scores (Pinatubo -0.95/-0.95,
+    1998 +0.75, 1983 -0.12) now computed, not hard-coded.
+  * `experiments/report.py`: abstract year counts corrected (147 / 69 / 278,
+    inclusive); holdout described as 127 months, not "ten years"; causal
+    language tightened throughout (association vs attribution); attribution
+    table now reports r^2 and a labelled supplementary robustness paragraph
+    (detrended and first-difference correlations, effective sample size);
+    trend section reports an AR(1)-effective-n modified-Mann-Kendall
+    robustness check (temp p ~ 1e-39 -> ~ 8e-5 under correction; post-1970
+    ~ 4e-11; CO2 correction unreliable, tau = 1.00 unchanged); discussion
+    covers autocorrelation and partial-year effects; figures get alt text.
+  * `requirements.txt`: added `requests` (used by acquire.py); corrected the
+    CO2 URL in the acquire.py docstring (.txt, not .csv).
 - 2025-08-19: Stage 9 done — final report (`experiments/report.py`): reruns all
   8 stage scripts, parses their numbers directly from stdout (no transcription
   drift), embeds all 11 figures as base64, and writes `results/report.html`

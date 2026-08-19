@@ -51,10 +51,11 @@ prog.update()
 
 n_expected = sum(1 for yr in EVENTS if yr in flagged.index)
 print(f"\nMatched {n_expected}/{len(EVENTS)} documented event years as outliers.")
+z92, z93, z98, z83 = z.loc[1992], z.loc[1993], z.loc[1998], z.loc[1983]
 print("Documented near-misses (real events, below 1.5 sigma):")
-print("  1992-93 Pinatubo dip: z=-0.95 both years, muted by concurrent El Nino")
-print("  1998 El Nino: z=+0.75 - strong year, but the trend caught up with it")
-print("  1983 El Nino: z=-0.12 - warming offset by El Chichon cooling")
+print(f"  1992-93 Pinatubo dip: z={z92:+.2f}/{z93:+.2f}, muted by concurrent El Nino")
+print(f"  1998 El Nino: z={z98:+.2f} - strong year, but the trend caught up with it")
+print(f"  1983 El Nino: z={z83:+.2f} - warming offset by El Chichon cooling")
 print("z-scores are detrended anomalies, so they isolate events, not the trend.")
 prog.update()
 

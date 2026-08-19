@@ -29,10 +29,12 @@ g, c, s = data["gistemp"], data["co2"], data["sunspots"]
 
 # --- basic statistics ------------------------------------------------------
 def stats(df, col):
-    v = df[col].dropna()
-    return dict(n=len(v), start=df["date"].min().date(), end=df["date"].max().date(),
-                latest=round(v.iloc[-1], 2), mean=round(v.mean(), 2),
-                std=round(v.std(), 2), min=round(v.min(), 2), max=round(v.max(), 2))
+    # sort by date: the tidy frames are not guaranteed date-ordered
+    ok = df[df[col].notna()].sort_values("date")
+    return dict(n=len(ok), start=ok["date"].min().date(), end=ok["date"].max().date(),
+                latest=round(ok[col].iloc[-1], 2), mean=round(ok[col].mean(), 2),
+                std=round(ok[col].std(), 2), min=round(ok[col].min(), 2),
+                max=round(ok[col].max(), 2))
 
 rows = [pd.Series({"series": "GISTEMP temp anomaly (degC)", **stats(g, "anomaly")}),
         pd.Series({"series": "Mauna Loa CO2 (ppm)", **stats(c, "co2_ppm")}),

@@ -4,8 +4,8 @@ Question: can we forecast CO2 and temperature ahead, and does a small LSTM
 beat classical/ML baselines?
 
 Protocol (identical for every model, no leakage):
-  - train: series up to 2015-12; test: 2016-01 -> end (multi-step
-    "forecast the near future" task, ~10 years ahead)
+  - train: series up to 2015-12; test: 2016-01 -> 2026-07 (127 months,
+    "forecast the near future" multi-step task)
   - each model fits ONCE on the train window and forecasts the full test
     horizon recursively (XGBoost/LSTM feed their own predictions back as
     lags; ARIMA forecasts natively)

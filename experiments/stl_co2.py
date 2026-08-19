@@ -33,8 +33,10 @@ prog.update()
 df = pd.DataFrame({"obs": co2, "trend": stl.trend, "seasonal": stl.seasonal,
                    "resid": stl.resid})
 df["year"] = df.index.year
-amp = df.groupby("year")["seasonal"].apply(lambda v: v.max() - v.min())
-amp = amp.dropna()
+# peak-trough amplitude needs a FULL year of seasonal values; the partial
+# years 1958 (Mar-Dec) and 2026 (Jan-Jul) would understate the trough/peak
+full = df.groupby("year")["seasonal"].apply(lambda v: v.max() - v.min() if len(v) == 12 else np.nan)
+amp = full.dropna()
 
 x = amp.index.values.astype(float)
 slope, intercept, lo, hi = theilslopes(amp.values, x)
@@ -44,7 +46,8 @@ print(f"Seasonal amplitude (monthly ppm peak-trough): grows "
       f"{slope * 10:+.3f} ppm per decade, 95% CI=[{lo * 10:+.3f}, {hi * 10:+.3f}], "
       f"MK p={p:.3g}")
 print(f"Series: {len(co2)} months, trend covers {df['trend'].notna().sum()} pts, "
-      f"residual std={df['resid'].std():.3f} ppm")
+      f"residual std={df['resid'].std():.3f} ppm, amplitude years: {len(amp)} "
+      f"({amp.index.min()}-{amp.index.max()}, full calendar years only)")
 prog.update()
 
 fig, axes = plt.subplots(4, 1, figsize=(10, 9), sharex=True)

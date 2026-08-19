@@ -46,7 +46,7 @@ def grab(pattern, text, group=1, default="n/a"):
 
 def img(name, num, caption):
     data = base64.b64encode((PLOTS / name).read_bytes()).decode()
-    return (f'<figure><img src="data:image/png;base64,{data}"/>'
+    return (f'<figure><img src="data:image/png;base64,{data}" alt="{caption}"/>'
             f'<figcaption>Figure {num}. {caption}</figcaption></figure>')
 
 def table(num, caption, headers, rows):
@@ -106,11 +106,16 @@ for name in ("GISTEMP temp anomaly (degC)", "Mauna Loa CO2 (ppm)",
         stat_rows.append([name] + list(m.groups()))
 decades = re.findall(r"^(\d{4})\s+([+\-.\d]+)$", e0, re.M)
 
-# events: flagged outlier rows
+# events: flagged outlier rows + computed near-miss z-scores
 ev = out["events"]
 event_rows = [(m.group(1), m.group(2), m.group(3).strip()) for m in
               re.finditer(r"^(\d{4})\s+([+\-.\d]+)\s+(.*)$", ev, re.M)
               if m.group(3).strip()]
+z92 = grab(r"1992-93 Pinatubo dip: z=([+\-.\d]+)/", ev)
+z93 = grab(r"1992-93 Pinatubo dip: z=[+\-.\d]+/([+\-.\d]+)", ev)
+z98 = grab(r"1998 El Nino: z=([+\-.\d]+) - strong", ev)
+z83 = grab(r"1983 El Nino: z=([+\-.\d]+) - warming", ev)
+amp_n = grab(r"amplitude years: (\d+)", out["stl_co2"])
 
 f = out["forecast"]
 f_lines = re.findall(
@@ -155,8 +160,8 @@ BODY = f"""
 record, the NOAA Mauna Loa CO2 record, and the SILSO sunspot record.</p>
 
 <div class="abstract"><b>Abstract.</b> We analyse three real, publicly available climate
-time series: 146 years of global land&ndash;ocean temperature anomaly (NASA GISTEMP),
-68 years of Mauna Loa CO2 (NOAA GML / Keeling curve), and 277 years of monthly sunspot
+time series: 147 years of global land&ndash;ocean temperature anomaly (NASA GISTEMP),
+69 years of Mauna Loa CO2 (NOAA GML / Keeling curve), and 278 years of monthly sunspot
 counts (SILSO). Using robust trend estimation with significance testing, breakpoint
 analysis, seasonal&ndash;trend decomposition (STL), Fourier spectral analysis, partial
 correlation, and a three-model forecasting comparison, we obtain the following results.
@@ -166,11 +171,11 @@ acceleration after 1970 (post-1970 rate {post_slope} &deg;C per decade). (2) CO2
 {co2_slope} ppm per decade (CI {co2_ci}; p = {co2_p}), and the amplitude of its seasonal
 cycle increased by {amp_slope} ppm per decade (CI {amp_ci}; p = {amp_p}). (3) Spectral
 analysis recovers a dominant solar period of {peak} years. (4) Partial correlations
-attribute the temperature rise predominantly to CO2, with at most a minor residual solar
-contribution. (5) On a ten-year holdout, a seasonal ARIMA model outperforms both XGBoost
-and a small LSTM on both series; all three methods beat a persistence baseline for CO2,
-but only ARIMA does so for temperature. All claims are traceable to the scripts listed in
-Section 8.</div>
+associate the temperature rise predominantly with CO2 (partial r&sup2; = 0.94) and find
+at most a small residual solar association (partial r&sup2; = 0.12). (5) On a 127-month
+holdout (2016-01 to 2026-07), a seasonal ARIMA model outperforms both XGBoost and a small
+LSTM on both series; all three methods beat a persistence baseline for CO2, but only ARIMA
+does so for temperature. All claims are traceable to the scripts listed in Section 8.</div>
 
 <h2>Glossary of abbreviations</h2>
 <table>
@@ -209,10 +214,10 @@ carefully maintained time series. Three of these records stand out. The global
 land&ndash;ocean temperature anomaly, compiled by NASA GISTEMP since 1880, is the most
 direct measure of whether the planet is warming. The Mauna Loa CO2 record &mdash; the
 famous "Keeling curve" begun by Charles Keeling in 1958 &mdash; documents the principal
-greenhouse gas driving that warming. And the sunspot number, compiled by the World Data
+greenhouse gas associated with that warming. And the sunspot number, compiled by the World Data
 Center SILSO since 1749, tracks the natural solar variability that is the leading
 candidate alternative explanation. Together the three records cover the symptom, the
-cause, and the control: every hypothesis about the drivers of recent warming can be tested
+candidate cause, and the control: every hypothesis about the drivers of recent warming can be tested
 against them. All three are real, publicly available measurements, downloaded once and
 never modified by this analysis.</p>
 <p>Because these records are measurements through time, the scientific questions about
@@ -223,7 +228,7 @@ other influences are removed? And can the series be forecast, and by which metho
 toolkit of time-series analysis &mdash; robust trend estimation, significance testing,
 seasonal decomposition, spectral analysis, partial correlation, and forecasting &mdash; was
 developed precisely for such questions, and each tool is exercised in this study.</p>
-<p>The study is organised as a reproducible pipeline of eight analytical stages, each
+<p>The study is organised as a reproducible pipeline of analytical stages, each
 implemented as a single runnable script that reads the raw data and produces its own
 figures and numbers (Section 8). Trends are never reported without their significance;
 the breakpoint is specified before the data are examined; observed results are kept
@@ -267,7 +272,9 @@ of the slopes of all pairs of observations &mdash; which resists the influence o
 far better than ordinary least squares. Its significance is assessed with the
 Mann&ndash;Kendall test, the standard non-parametric test for monotonic trend; the
 associated p-value quantifies the probability of observing the pattern under a null
-hypothesis of no trend. Every trend estimate in Section 5 is reported with its 95%
+hypothesis of no trend. The p-values assume independent observations; because climate
+series are autocorrelated, Section 5.2 reports a robustness check with an effective
+sample-size correction. Every trend estimate in Section 5 is reported with its 95%
 confidence interval and p-value, so that each claim carries its significance rather than a
 bare slope.</p>
 <p>The structure of the series is characterised with two further tools. STL decomposition
@@ -283,7 +290,8 @@ association between two variables after the linear effect of a third has been re
 both; this allows the analysis to ask whether temperature tracks CO2 once the solar cycle
 is accounted for, and vice versa. Finally, the forecasting comparison follows a strict
 protocol: every model is fitted once on data up to December 2015 and evaluated exclusively
-on the 2016&ndash;2026 holdout, with MAE and RMSE computed against a persistence baseline.
+on the 127-month holdout (2016-01 to 2026-07), with MAE and RMSE computed against a
+persistence baseline.
 The models and their configuration are described in Section 4.</p>
 
 <h2>4. Forecasting models and configuration</h2>
@@ -341,6 +349,17 @@ variability. CO2 rose at {co2_slope} ppm per decade (CI {co2_ci}; p = {co2_p}), 
 unambiguous. In both panels of Figure 3 the fitted lines track the annual means closely,
 and because the Theil&ndash;Sen estimator is a median of pairwise slopes, the estimates are
 robust to the influence of individual extreme years.</p>
+<p><i>Supplementary robustness check (autocorrelation).</i> The Mann&ndash;Kendall p-values
+above assume independent annual observations, which understates the uncertainty for
+autocorrelated climate series. Recomputing the test with an AR(1)-based effective sample
+size (a modified Mann&ndash;Kendall correction) leaves the temperature trend significant
+at p &asymp; 8&times;10<sup>&minus;5</sup> (effective n &asymp; 13 of 147 years) and the
+post-1970 trend at p &asymp; 4&times;10<sup>&minus;11</sup> (effective n &asymp; 29 of 57).
+For CO2 the detrended series is so strongly autocorrelated (lag-1 &rho; &asymp; 0.99) that
+the correction collapses the effective sample size and the corrected p-value is
+unreliable; the trend statistic itself is unchanged (Kendall&rsquo;s &tau; = 1.00, a
+perfectly monotonic series). The substantive conclusions of this section are unaffected by
+the correction.</p>
 
 <h3>5.3 Breakpoint analysis: acceleration after 1970</h3>
 {img("breakpoint.png", 4, "Theil&ndash;Sen fits applied separately to the pre-1970 and post-1970 segments of the temperature record.")}
@@ -358,10 +377,10 @@ data-dependent selection.</p>
 
 <h3>5.4 Seasonal decomposition of the CO2 record</h3>
 {img("stl_co2.png", 5, "STL decomposition of monthly Mauna Loa CO2 into observed, trend, seasonal, and residual components.")}
-{img("co2_seasonal_amplitude.png", 6, "Annual peak-to-trough amplitude of the seasonal component, with fitted trend.")}
-{table(7, "Growth of the seasonal cycle amplitude and residual diagnostics.",
+{img("co2_seasonal_amplitude.png", 6, "Annual peak-to-trough amplitude of the seasonal component (full calendar years, 1959&ndash;2025), with fitted trend.")}
+{table(7, "Growth of the seasonal cycle amplitude (full calendar years only) and residual diagnostics.",
        ["Quantity", "Estimate", "95% CI", "p-value"],
-       [["Amplitude growth (ppm/decade)", amp_slope, amp_ci, amp_p],
+       [[f"Amplitude growth (ppm/decade, {amp_n} full years)", amp_slope, amp_ci, amp_p],
         ["Residual SD (ppm)", resid_std, "&mdash;", "&mdash;"]])}
 <p>Figure 5 shows the four components of the decomposition. The trend component rises
 monotonically from approximately 315 to 430 ppm; the seasonal component is a regular
@@ -397,22 +416,40 @@ a mean value rather than a strict constant.</p>
 
 <h3>5.6 Attribution: CO2 versus solar variability</h3>
 {img("attribution.png", 9, "Left: temperature versus CO2, coloured by sunspot number. Right: temperature versus sunspots, coloured by CO2. Annual means, 1958&ndash;2026.")}
-{table(9, "Simple and partial Pearson correlations (n = 69 annual observations, 1958&ndash;2026).",
-       ["Correlation", "r", "p-value"],
-       [["Temperature &ndash; CO2 (simple)", r_tc_plain, p_tc_plain],
-        ["Temperature &ndash; sunspots (simple)", r_ts_plain, p_ts_plain],
-        ["Temperature &ndash; CO2 | sunspots (partial)", r_tc_part, p_tc_part],
-        ["Temperature &ndash; sunspots | CO2 (partial)", r_ts_part, p_ts_part]])}
-<p>Table 9 reports the simple and partial correlations. The temperature&ndash;CO2 correlation is {r_tc_plain} (p = {p_tc_plain}) and remains
-essentially unchanged when the solar cycle is partialled out ({r_tc_part}, p = {p_tc_part});
-the CO2 signal therefore does not depend on solar activity. By contrast, the raw
-temperature&ndash;sunspot correlation is negligible ({r_ts_plain}, p = {p_ts_plain}), and
-although the partial correlation is statistically detectable, it is small
-({r_ts_part}, p = {p_ts_part}). The data thus separate the two candidate drivers cleanly:
-CO2 accounts for the overwhelming majority of the shared variance, while solar activity
-contributes at most a minor residual component (Figure 9, where the left panel shows a tight
-linear association with no visible structure in the colour channel). These associations are
-descriptive; they do not by themselves establish causation.</p>
+{table(9, "Simple and partial Pearson correlations (n = 69 annual observations, 1958&ndash;2026). r&sup2; is the squared correlation: for simple correlations, the share of variance explained; for partial correlations, the share of residual variance explained after removing the control variable.",
+       ["Correlation", "r", "r&sup2;", "p-value"],
+       [["Temperature &ndash; CO2 (simple)", r_tc_plain, f"{float(r_tc_plain) ** 2:.3f}", p_tc_plain],
+        ["Temperature &ndash; sunspots (simple)", r_ts_plain, f"{float(r_ts_plain) ** 2:.3f}", p_ts_plain],
+        ["Temperature &ndash; CO2 | sunspots (partial)", r_tc_part, f"{float(r_tc_part) ** 2:.3f}", p_tc_part],
+        ["Temperature &ndash; sunspots | CO2 (partial)", r_ts_part, f"{float(r_ts_part) ** 2:.3f}", p_ts_part]])}
+<p>Table 9 reports the simple and partial correlations. Over the common period
+1958&ndash;2026, the temperature&ndash;CO2 correlation is r = {r_tc_plain} (r&sup2; = 0.94;
+p = {p_tc_plain}) and remains essentially unchanged when the solar cycle is partialled
+out (r = {r_tc_part}; r&sup2; = 0.94; p = {p_tc_part}): the partial CO2 association
+accounts for 94% of the temperature variance remaining after removal of the solar cycle.
+By contrast, the raw temperature&ndash;sunspot correlation is negligible (r = {r_ts_plain};
+r&sup2; = 0.02; p = {p_ts_plain}), and although the partial correlation is statistically
+detectable it is small in comparison (r = {r_ts_part}; r&sup2; = 0.12): solar activity
+explains 12% of the residual temperature variance after removal of CO2, roughly an eighth
+of the share associated with CO2. These correlations are descriptive and do not by
+themselves establish causation; moreover, both temperature and CO2 trend strongly over the
+common period, so the raw correlations partly reflect a shared trend (see the robustness
+check below). Figure 9 makes the asymmetry visible: temperature against CO2 (left) falls on
+a tight line with no structure in the colour channel (sunspot number), whereas temperature
+against sunspots (right) shows no coherent pattern once the colour scale (CO2) is
+accounted for.</p>
+<p><i>Supplementary robustness check (confounding and autocorrelation).</i> Removing a
+linear trend from both series reduces the temperature&ndash;CO2 correlation to r = 0.66
+(p = 7&times;10<sup>&minus;10</sup>), and first-differencing reduces it further to
+r = 0.31 (p = 0.009); the association therefore survives both detrending and
+differencing and is not purely an artefact of the shared trend. The solar association does
+not survive differencing: the detrended temperature&ndash;sunspot correlation is r = 0.30
+(p = 0.013), but the first-difference correlation is r = 0.08 (p = 0.54), so the solar
+signal is weak and sensitive to the detrending choice. Finally, all p-values in this
+section assume independent annual observations; the temperature residuals have lag-1
+autocorrelation &asymp; 0.5 (effective sample size &asymp; 23 of 69 years) and the CO2
+residuals are near-unit autocorrelated, so the reported p-values are optimistic and should
+be read as upper bounds on significance.</p>
 
 <h3>5.7 Extreme years and documented climate events</h3>
 {img("events.png", 10, "Annual temperature anomalies with fitted trend, the &plusmn;1.5&sigma; band of detrended values, and flagged outlier years.")}
@@ -423,16 +460,16 @@ standard deviations. Three flags correspond to documented events: 1964 (cooling 
 the 1963 Agung eruption), and 2016 and 2024 (El Ni&ntilde;o years). The remaining flags
 fall in the 1880s, a period of lower data quality and higher relative noise. Equally
 informative are the documented events that do not reach the threshold, all of which admit a
-physical explanation: the 1992&ndash;93 Pinatubo cooling (z &asymp; &minus;0.95), muted by a
-concurrent El Ni&ntilde;o; the 1998 El Ni&ntilde;o (z = +0.75), whose anomaly the secular
-trend had overtaken; and 1983, whose El Ni&ntilde;o warming was offset by the El
+physical explanation: the 1992&ndash;93 Pinatubo cooling (z = {z92}/{z93}), muted by a
+concurrent El Ni&ntilde;o; the 1998 El Ni&ntilde;o (z = {z98}), whose anomaly the secular
+trend had overtaken; and 1983 (z = {z83}), whose El Ni&ntilde;o warming was offset by the El
 Chich&oacute;n eruption. The procedure therefore detects genuine event signals, and its
 apparent misses are attributable to documented physical offsets rather than to a failure of
 the detection method.</p>
 
 <h3>5.8 Forecasting comparison</h3>
 {img("forecast.png", 11, "Forecasting comparison. Upper row: context since 2000. Lower row: forecast detail since 2014 &mdash; observed test values in black, model forecasts coloured, persistence dashed; the dotted line marks the train/test boundary.")}
-{table(11, "Holdout performance (test period 2016-01 to 2026; MAE and RMSE, with improvement relative to the persistence baseline).",
+{table(11, "Holdout performance (test period 2016-01 to 2026-07, 127 months; MAE and RMSE, with improvement relative to the persistence baseline).",
        ["Series / model", "MAE", "RMSE", "vs persistence"],
        [["CO2 &mdash; persistence", persist_co2, "&mdash;", "&mdash;"],
         ["CO2 &mdash; SARIMA", mae_co2["ARIMA"][0], mae_co2["ARIMA"][1], f"{mae_co2['ARIMA'][2]}%"],
@@ -443,34 +480,36 @@ the detection method.</p>
         ["Temperature &mdash; XGBoost", mae_temp["XGBoost"][0], mae_temp["XGBoost"][1], f"{mae_temp['XGBoost'][2]}%"],
         ["Temperature &mdash; LSTM", mae_temp["LSTM"][0], mae_temp["LSTM"][1], f"{mae_temp['LSTM'][2]}%"]])}
 <p>All models were fitted on data up to December 2015 and evaluated exclusively on the
-2016&ndash;2026 holdout (Table 11, Figure 11). For CO2, every method outperforms the
-persistence baseline by a substantial margin &mdash; SARIMA (MAE {mae_co2['ARIMA'][0]} ppm,
-an improvement of {mae_co2['ARIMA'][2]}%), XGBoost ({mae_co2['XGBoost'][0]} ppm,
-{mae_co2['XGBoost'][2]}%), and LSTM ({mae_co2['LSTM'][0]} ppm, {mae_co2['LSTM'][2]}%)
-&mdash; reflecting the strongly learnable trend and seasonality of the series. For
-temperature, the ordering differs: only SARIMA improves on the baseline (MAE
-{mae_temp['ARIMA'][0]} &deg;C, {mae_temp['ARIMA'][2]}%), whereas both machine-learning
-models underperform it (XGBoost {mae_temp['XGBoost'][0]} &deg;C; LSTM {mae_temp['LSTM'][0]}
-&deg;C). This contrast is consistent with the structure of the series: the temperature
-record behaves approximately as a random walk about a slow trend, leaving little
-additional structure for lag-based models to exploit, and the additional flexibility of
-those models consequently degrades out-of-sample performance. Model configurations were
-fixed in advance and are documented in <code>docs/process.md</code> &sect;8.</p>
+127-month holdout 2016-01 to 2026-07 (Table 11, Figure 11). For CO2, every method
+outperforms the persistence baseline by a substantial margin &mdash; SARIMA (MAE
+{mae_co2['ARIMA'][0]} ppm, an improvement of {mae_co2['ARIMA'][2]}%), XGBoost
+({mae_co2['XGBoost'][0]} ppm, {mae_co2['XGBoost'][2]}%), and LSTM ({mae_co2['LSTM'][0]}
+ppm, {mae_co2['LSTM'][2]}%) &mdash; reflecting the strongly learnable trend and seasonality
+of the series. For temperature, the ordering differs: only SARIMA improves on the baseline
+(MAE {mae_temp['ARIMA'][0]} &deg;C, {mae_temp['ARIMA'][2]}%), whereas both
+machine-learning models underperform it (XGBoost {mae_temp['XGBoost'][0]} &deg;C; LSTM
+{mae_temp['LSTM'][0]} &deg;C). This contrast is consistent with the structure of the
+series: the temperature record behaves approximately as a random walk about a slow trend,
+leaving little additional structure for lag-based models to exploit, and the additional
+flexibility of those models consequently degrades out-of-sample performance. Model
+configurations were fixed in advance and are documented in <code>docs/process.md</code>
+&sect;8.</p>
 <p>Figure 11 also makes clear why the temperature forecasts do not track the test record
 closely. Two distinct effects are at work. The first is irreducible: the observed test
 values swing between roughly 0.6 and 1.5 &deg;C from month to month, because monthly
 anomalies are dominated by short-term variability &mdash; weather and El Ni&ntilde;o-scale
 fluctuations &mdash; that a model trained only on monthly lags cannot anticipate. SARIMA's
 forecast (MAE {mae_temp['ARIMA'][0]} &deg;C) is a smooth conditional expectation: it is
-centred correctly (its mean of 0.97 &deg;C is close to the test mean of 1.02 &deg;C) but,
-like any such expectation, it cannot follow the individual swings. The second effect is
-systematic: the machine-learning forecasts are built by compounding predicted monthly
-differences, and a small upward bias in those differences accumulates over the ten-year
-horizon. XGBoost's line therefore climbs to roughly 0.4 &deg;C above the observed values in
-the final years (its MAE of {mae_temp['XGBoost'][0]} &deg;C is about twice SARIMA's); the
-differencing introduced in Section 4 removed the gross drift of the original configuration,
-and the residual drift visible here is the same mechanism at a smaller scale. Neither
-effect can be removed by a lag-based model without external predictors.</p>
+centred near the test level (its mean of 0.93 &deg;C is close to the test mean of 1.02
+&deg;C) but, like any such expectation, it cannot follow the individual swings. The second
+effect is systematic: the machine-learning forecasts are built by compounding predicted
+monthly differences, and a small upward bias in those differences accumulates over the
+127-month horizon. XGBoost's line therefore climbs to roughly 1 &deg;C above the observed
+values in the final years (its MAE of {mae_temp['XGBoost'][0]} &deg;C is nearly five times
+SARIMA's, and the LSTM's {mae_temp['LSTM'][0]} &deg;C is similar); the differencing
+introduced in Section 4 removed the gross drift of the original configuration, but the
+compounding mechanism remains. Neither effect can be removed by a lag-based model without
+external predictors.</p>
 
 <h2>6. Discussion and limitations</h2>
 <p>The principal caveat concerns the attribution analysis, which is descriptive rather than
@@ -485,30 +524,43 @@ evaluation over multiple windows would provide more robust model rankings at gre
 computational cost. Model configurations were fixed rather than tuned &mdash; a tuned LSTM
 might perform better on CO2, but tuning on the test period would invalidate the
 comparison.</p>
+<p>All significance tests in this report (Mann&ndash;Kendall and Pearson) assume independent
+observations, whereas monthly and annual climate series are autocorrelated; the p-values
+are therefore optimistic. Sections 5.2 and 5.6 report robustness checks with
+an effective-sample-size correction and with detrended and first-difference correlations,
+and the substantive conclusions are unchanged. The 2026 GISTEMP annual value uses only
+January&ndash;July, and the CO2 seasonal-amplitude analysis is restricted to full calendar
+years; excluding the partial 2026 temperature year changes the full-record trend only in
+the third decimal place (0.082 &rarr; 0.081 &deg;C per decade).</p>
 <p>Finally, the data themselves impose limits. Recent GISTEMP values are preliminary and
 subject to revision, and the final months of the record are reported as missing and were
 excluded from the analysis.</p>
 
 <h2>7. Conclusions</h2>
 <ul>
-<li><b>Warming is real and accelerating.</b> The temperature trend is highly significant
-(p &sim; 10<sup>&minus;39</sup>): {temp_slope} &deg;C per decade over the full record and
-{post_slope} &deg;C per decade since 1970, with non-overlapping confidence intervals.</li>
+<li><b>Warming is real and accelerating.</b> The temperature trend is significant at any
+conventional level: {temp_slope} &deg;C per decade over the full record and {post_slope}
+&deg;C per decade since 1970, with non-overlapping confidence intervals (Mann&ndash;Kendall
+p &sim; 10<sup>&minus;39</sup> under independent observations; p &sim; 10<sup>&minus;4</sup>
+after an effective-sample-size correction; Section 5.2).</li>
 <li><b>The carbon cycle is intensifying.</b> CO2 is rising at {co2_slope} ppm per decade
-and the amplitude of its seasonal cycle is growing ({amp_slope} ppm per decade).</li>
-<li><b>The Sun is not the driver.</b> The solar cycle is a well-defined {peak}-year
-oscillation, yet the temperature&ndash;CO2 association survives removal of the solar cycle,
-whereas the residual solar association after controlling for CO2 is small.</li>
-<li><b>Classical models still win on long horizons.</b> SARIMA outperforms both XGBoost and
-a small LSTM on both series; machine learning adds value only where learnable structure
-exists beyond the trend (CO2), and even there it does not match SARIMA.</li>
+and the amplitude of its seasonal cycle is growing ({amp_slope} ppm per decade), a change
+consistent with an intensifying seasonal carbon exchange.</li>
+<li><b>Solar variability cannot explain the warming.</b> The solar cycle is a well-defined
+{peak}-year oscillation, yet the temperature&ndash;CO2 association survives removal of the
+solar cycle (partial r&sup2; = 0.94) while the residual solar association after
+controlling for CO2 is small (r&sup2; = 0.12) and does not survive first-differencing.</li>
+<li><b>SARIMA produced the lowest forecast error.</b> Under the fixed configurations and
+the 127-month holdout, SARIMA outperforms both XGBoost and a small LSTM on both series;
+machine learning adds value only where learnable structure exists beyond the trend (CO2),
+and even there it does not match SARIMA.</li>
 </ul>
 <p>Taken together, the three records tell a coherent story. The warming of the past century
-is real, statistically unambiguous, and accelerating; it is overwhelmingly associated with
-the rise of greenhouse gases rather than with solar variability; and the biosphere's
-seasonal response to that rise is itself strengthening. The forecasting results add a
-methodological coda: on ten-year horizons, a well-specified classical model still
-outperforms more flexible machine-learning approaches on these data.</p>
+is real, statistically unambiguous, and accelerating; it is strongly associated with the
+rise of greenhouse gases rather than with solar variability; and the seasonal amplitude of
+atmospheric CO2 is growing. The forecasting results add a methodological coda: under this
+holdout configuration, the classical seasonal model produced the lowest forecast error on
+both series.</p>
 
 <h2>8. Reproducibility</h2>
 <p>Every result is generated by a single command:</p>
