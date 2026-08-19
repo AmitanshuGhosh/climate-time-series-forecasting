@@ -155,7 +155,7 @@ pre{background:#ffffff;border:1px solid #ccc;padding:.7em;font-size:.8em;
 
 # --- HTML body --------------------------------------------------------------
 BODY = f"""
-<h1>Three Records of a Changing Planet</h1>
+<h1>Global Temperature, Atmospheric CO&#8322;, and Solar Variability: A Reproducible Time-Series Analysis</h1>
 <p class="subtitle">A reproducible time-series analysis of the NASA GISTEMP temperature
 record, the NOAA Mauna Loa CO2 record, and the SILSO sunspot record.</p>
 
