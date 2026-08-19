@@ -1,4 +1,4 @@
-"""Stage 9: build the final HTML report (research-paper style).
+I"""Stage 9: build the final HTML report. 
 
 Runs every stage experiment (regenerating plots + numbers), parses the key
 figures straight from their stdout (no transcription drift), embeds the plots
