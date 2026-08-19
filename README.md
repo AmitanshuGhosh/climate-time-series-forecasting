@@ -16,8 +16,7 @@ for the question of recent warming:
 
 The analysis asks three questions. Is the planet warming, and is the trend
 statistically significant? What drives the annual CO2 cycle, and is it
-changing? How much of the warming can be attributed to solar variability
-rather than to greenhouse gases?
+changing? How strongly are the observed warming trends associated with CO₂ and solar variability?
 
 ## Key Results
 
