@@ -3,10 +3,10 @@
 Climate time-series analysis project: GISTEMP temperature, Keeling CO2, sunspot cycle.
 
 ## Layout
-- `src/` — reusable logic (acquire, analysis helpers, models, evaluation, progress)
-- `experiments/` — runnable analyses (one per stage)
-- `data/raw/` — untouched source files; `data/processed/` — derived series
-- `results/` — plots and metrics; `tests/` — self-checks; `docs/process.md` — living log
+- `src/` - reusable logic (acquire, analysis helpers, models, evaluation, progress)
+- `experiments/` - runnable analyses (one per stage)
+- `data/raw/` - untouched source files; `data/processed/` - derived series
+- `results/` - plots and metrics; `tests/` - self-checks; `docs/process.md` - living log
 
 ## Commands
 - Install: `.venv/Scripts/python -m pip install -r requirements.txt`

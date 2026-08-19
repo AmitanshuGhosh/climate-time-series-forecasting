@@ -1,4 +1,4 @@
-"""Stage 3: breakpoint analysis — warming rate before/after 1970.
+"""Stage 3: breakpoint analysis - warming rate before/after 1970.
 
 Splits the GISTEMP annual record at 1970 and fits Theil-Sen + Mann-Kendall
 to each segment. Non-overlapping slope CIs = the acceleration is real, not

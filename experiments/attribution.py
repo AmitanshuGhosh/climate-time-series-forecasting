@@ -1,4 +1,4 @@
-"""Stage 6: attribution — partial correlations of temperature vs CO2 / sunspots.
+"""Stage 6: attribution - partial correlations of temperature vs CO2 / sunspots.
 
 Question: once the solar cycle is removed, does temperature still track CO2?
 And once CO2's trend is removed, does any solar signal remain? Annual means,

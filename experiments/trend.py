@@ -1,4 +1,4 @@
-"""Stage 2: trend analysis — Theil-Sen slope + Mann-Kendall significance.
+"""Stage 2: trend analysis - Theil-Sen slope + Mann-Kendall significance.
 
 Quantifies warming in GISTEMP and CO2 growth in Mauna Loa with the standard
 climatology toolkit: robust Theil-Sen slope (with CI) and Kendall's tau

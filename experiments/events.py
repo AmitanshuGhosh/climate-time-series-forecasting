@@ -1,4 +1,4 @@
-"""Stage 7: anomaly events — do El Nino / volcanic years show up as outliers?
+"""Stage 7: anomaly events - do El Nino / volcanic years show up as outliers?
 
 Detrend the GISTEMP annual record (Theil-Sen), z-score the residuals, flag
 |z| > 1.5, and match each outlier against documented real-world events

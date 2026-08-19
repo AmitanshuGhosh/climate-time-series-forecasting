@@ -1,4 +1,4 @@
-"""Stage 8: forecasting — ARIMA vs XGBoost-on-lags vs LSTM.
+"""Stage 8: forecasting - ARIMA vs XGBoost-on-lags vs LSTM.
 
 Question: can we forecast CO2 and temperature ahead, and does a small LSTM
 beat classical/ML baselines?

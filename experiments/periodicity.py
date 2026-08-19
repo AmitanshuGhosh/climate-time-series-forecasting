@@ -1,4 +1,4 @@
-"""Stage 5: periodicity — find the ~11-year solar cycle in sunspot numbers.
+"""Stage 5: periodicity - find the ~11-year solar cycle in sunspot numbers.
 
 Evenly sampled monthly SSN since 1749 -> windowed FFT periodogram on the
 detrended series. The dominant peak should land on the ~11-year Schwabe cycle
@@ -75,7 +75,7 @@ for start in range(1750, 2026, 50):
     ax2.plot(periods_ff[keep], pp[keep] / pp[keep].max(), lw=1.2,
              label=f"{start}-{start + 49}")
 ax2.set_xlabel("Period (years)"); ax2.set_ylabel("Normalized power")
-ax2.set_title("Cycle length per half-century (normalized) — period wanders 9-13 yr")
+ax2.set_title("Cycle length per half-century (normalized) - period wanders 9-13 yr")
 ax2.legend(fontsize=8, ncol=4)
 fig2.tight_layout()
 fig2.savefig(PLOTS / "sunspot_cycle_evolution.png", dpi=150)

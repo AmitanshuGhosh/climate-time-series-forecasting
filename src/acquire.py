@@ -1,11 +1,11 @@
 """Acquire and cache the three climate time series (raw data preserved).
 
 Sources (all public, tiny, no API key):
-1. NASA GISTEMP — global land-ocean temperature anomaly, monthly, 1880-now
+1. NASA GISTEMP - global land-ocean temperature anomaly, monthly, 1880-now
    https://data.giss.nasa.gov/gistemp/tabledata_v4/GLB.Ts+dSST.txt
-2. NOAA GML — Mauna Loa CO2 (Keeling curve), monthly, 1958-now
+2. NOAA GML - Mauna Loa CO2 (Keeling curve), monthly, 1958-now
    https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_mm_mlo.txt
-3. SILSO — monthly sunspot numbers (natural solar variability), 1749-now
+3. SILSO - monthly sunspot numbers (natural solar variability), 1749-now
    https://www.sidc.be/silso/INFO/snmtotcsv.php
 
 Files are downloaded once to data/raw/ and never modified.
