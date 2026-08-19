@@ -75,18 +75,52 @@ Section 8.</div>
 </table>
 
 <h2>1. Introduction</h2>
-<p>This study addresses three scientific questions using standard time-series methods:</p>
+<p>Climate change is arguably the most consequential measurement program in the history of
+the physical sciences, and its evidentiary core consists of a small number of long,
+carefully maintained time series. Three of these records stand out. The global
+land&ndash;ocean temperature anomaly, compiled by NASA GISTEMP since 1880, is the most
+direct measure of whether the planet is warming. The Mauna Loa CO2 record &mdash; the
+famous "Keeling curve" begun by Charles Keeling in 1958 &mdash; documents the principal
+greenhouse gas driving that warming. And the sunspot number, compiled by the World Data
+Center SILSO since 1749, tracks the natural solar variability that is the leading
+candidate alternative explanation. Together the three records cover the symptom, the
+cause, and the control: every hypothesis about the drivers of recent warming can be tested
+against them. All three are real, publicly available measurements, downloaded once and
+never modified by this analysis.</p>
+<p>Because these records are measurements through time, the scientific questions about
+them are time-series questions. Is there a trend, and is it statistically significant?
+Does the rate of change itself change? What periodic structure does a series contain, and
+how has it evolved? Which external series best explains the variation of another, once
+other influences are removed? And can the series be forecast, and by which method? The
+toolkit of time-series analysis &mdash; robust trend estimation, significance testing,
+seasonal decomposition, spectral analysis, partial correlation, and forecasting &mdash; was
+developed precisely for such questions, and each tool is exercised in this study.</p>
+<p>The study is organised as a reproducible pipeline of eight analytical stages, each
+implemented as a single runnable script that reads the raw data and produces its own
+figures and numbers (Section 8). Trends are never reported without their significance;
+the breakpoint is specified before the data are examined; observed results are kept
+separate from their interpretation; and the forecasting comparison is judged exclusively
+on data not seen during fitting. This report presents each stage&rsquo;s figure and table
+with a plain-English reading of what they show.</p>
+<p>Concretely, the study addresses three questions:</p>
 <ol>
-<li><b>Is the planet warming, and how is this established?</b> Trends are estimated with a
-robust slope estimator and tested for statistical significance rather than assessed by
-visual inspection.</li>
-<li><b>Why does atmospheric CO2 vary seasonally?</b> The Keeling curve is decomposed into
-trend, seasonal cycle, and residual components.</li>
-<li><b>What fraction of recent warming can be attributed to solar variability?</b> The
-temperature record is compared with the sunspot cycle and with CO2 using partial
-correlation, and the series are subjected to a three-model forecasting comparison on a
-held-out period.</li>
+<li><b>Is the planet warming, and how is this established?</b> The temperature trend is
+estimated with a robust Theil&ndash;Sen slope and tested with the Mann&ndash;Kendall test,
+so the answer carries a significance level rather than resting on visual inspection; a
+breakpoint analysis then asks whether the warming rate has itself changed since 1970.</li>
+<li><b>Why does atmospheric CO2 rise and oscillate every year?</b> The Keeling curve is
+decomposed into a secular trend, a seasonal cycle, and residual noise, and the amplitude
+of the seasonal cycle is measured over time &mdash; asking not only what the curve does,
+but whether its behaviour is changing.</li>
+<li><b>How much of recent warming is solar?</b> The temperature record is compared with the
+sunspot cycle and with CO2 using partial correlations, separating the two candidate
+drivers; the records are then used in a three-model forecasting comparison that asks which
+method &mdash; classical statistics, tree-based machine learning, or a neural network
+&mdash; best predicts the near future on an unseen holdout.</li>
 </ol>
+<p>Answering these questions exercises the full time-series toolkit on data that matter:
+significance-tested trends, structural change, decomposition, periodicity, attribution,
+and forecasting, with every claim traceable to a reproducible step.</p>
 
 <h2>2. Data and provenance</h2>
 <table><caption>Table 1. Datasets used in this study.</caption><tr><th>Dataset</th><th>Source</th><th>Coverage</th><th>Scientific role</th></tr><tr><td>Global land&ndash;ocean temperature anomaly (monthly, &deg;C vs 1951&ndash;80)</td><td>NASA GISTEMP v4</td><td>1880&ndash;2026</td><td>Primary target series</td></tr><tr><td>Mauna Loa CO2 (monthly, ppm)</td><td>NOAA GML (Keeling curve)</td><td>1958&ndash;2026</td><td>Greenhouse-gas driver; trend and seasonality</td></tr><tr><td>Sunspot number (monthly SSN)</td><td>SILSO, WDC-SILSO Brussels</td><td>1749&ndash;2026</td><td>Natural solar variability; control variable</td></tr></table>
