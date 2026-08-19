@@ -230,7 +230,7 @@ the breakpoint is specified before the data are examined; observed results are k
 separate from their interpretation; and the forecasting comparison is judged exclusively
 on data not seen during fitting. This report presents each stage&rsquo;s figure and table
 with a plain-English reading of what they show.</p>
-<p>Concretely, the study addresses three questions:</p>
+<p>The study addresses three questions:</p>
 <ol>
 <li><b>Is the planet warming, and how is this established?</b> The temperature trend is
 estimated with a robust Theil&ndash;Sen slope and tested with the Mann&ndash;Kendall test,
@@ -456,15 +456,21 @@ record behaves approximately as a random walk about a slow trend, leaving little
 additional structure for lag-based models to exploit, and the additional flexibility of
 those models consequently degrades out-of-sample performance. Model configurations were
 fixed in advance and are documented in <code>docs/process.md</code> &sect;8.</p>
-<p>Figure 11 also makes clear why the temperature forecasts look "flat" next to the test
-record: the observed test values swing between roughly 0.6 and 1.5 &deg;C, whereas even the
-best forecast (SARIMA, MAE {mae_temp['ARIMA'][0]} &deg;C) stays within a narrow, slowly
-rising band. This is not a defect of the models but a property of the series. Month-to-month
-temperature anomalies are dominated by short-term variability &mdash; weather and
-El Ni&ntilde;o-scale fluctuations &mdash; that a model trained on monthly lags cannot
-anticipate. The forecasts are smooth conditional expectations; the test values scatter
-around them with typical deviations of a few tenths of a degree, and no lag-based model can
-reduce that scatter without external predictors.</p>
+<p>Figure 11 also makes clear why the temperature forecasts do not track the test record
+closely. Two distinct effects are at work. The first is irreducible: the observed test
+values swing between roughly 0.6 and 1.5 &deg;C from month to month, because monthly
+anomalies are dominated by short-term variability &mdash; weather and El Ni&ntilde;o-scale
+fluctuations &mdash; that a model trained only on monthly lags cannot anticipate. SARIMA's
+forecast (MAE {mae_temp['ARIMA'][0]} &deg;C) is a smooth conditional expectation: it is
+centred correctly (its mean of 0.97 &deg;C is close to the test mean of 1.02 &deg;C) but,
+like any such expectation, it cannot follow the individual swings. The second effect is
+systematic: the machine-learning forecasts are built by compounding predicted monthly
+differences, and a small upward bias in those differences accumulates over the ten-year
+horizon. XGBoost's line therefore climbs to roughly 0.4 &deg;C above the observed values in
+the final years (its MAE of {mae_temp['XGBoost'][0]} &deg;C is about twice SARIMA's); the
+differencing introduced in Section 4 removed the gross drift of the original configuration,
+and the residual drift visible here is the same mechanism at a smaller scale. Neither
+effect can be removed by a lag-based model without external predictors.</p>
 
 <h2>6. Discussion and limitations</h2>
 <p>The principal caveat concerns the attribution analysis, which is descriptive rather than
