@@ -1,11 +1,21 @@
 # Environment
 .venv/
+venv/
 .pi/
 
 # Python
 __pycache__/
-*.pyc
+*.py[cod]
 .ipynb_checkpoints/
+.pytest_cache/
+
+# Secrets
+.env
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
 
 # Derived model artifacts
 models/

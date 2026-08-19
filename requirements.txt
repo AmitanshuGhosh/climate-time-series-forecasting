@@ -2,9 +2,7 @@ numpy
 pandas
 scipy
 matplotlib
-scikit-learn
+statsmodels
 xgboost
 torch
-jupyter
-statsmodels
 requests
