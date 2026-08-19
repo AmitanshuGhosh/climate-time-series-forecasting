@@ -72,7 +72,7 @@ Requires Python 3.10 or newer (developed and tested on 3.10).
 
 ```bash
 pip install -r requirements.txt
-python experiments/report.py     # runs all 8 stages, regenerates plots and the report
+python experiments/report.py     # runs all 8 stages, regenerates plots, HTML and PDF report
 ```
 
 `report.py` reruns every analysis from the raw data and takes about 2-3
@@ -83,8 +83,8 @@ python experiments/trend.py
 python experiments/forecast.py
 ```
 
-Outputs: `results/report.html` (the report), `results/plots/` (figures), and
-`docs/process.md` (process log).
+Outputs: `results/report.html` and `results/report.pdf` (the report),
+`results/plots/` (figures), and `docs/process.md` (process log).
 
 ## Project Structure
 
@@ -115,6 +115,10 @@ docs/process.md    process log
 
 ## Report
 
-The full report is `results/report.html` (self-contained, all figures
-embedded). It documents the data, methods, results, limitations, and
-reproducibility in research-paper style.
+- `results/report.html` - full report, self-contained with all figures embedded
+- `results/report.pdf` - PDF version, printed from the HTML
+
+Both are produced by `python experiments/report.py` and document the data,
+methods, results, limitations, and reproducibility in research-paper style.
+The PDF step uses headless Chrome/Edge from the system (no Python
+dependency); if neither browser is installed, only the HTML is produced.

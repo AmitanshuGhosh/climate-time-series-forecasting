@@ -44,7 +44,7 @@ raw files directly.
 | 6 | `experiments/attribution.py` | Partial correlations of temperature vs CO2 / sunspots |
 | 7 | `experiments/events.py` | Detrended annual anomalies, |z| > 1.5 flags vs documented events |
 | 8 | `experiments/forecast.py` | SARIMA vs XGBoost vs LSTM vs persistence, 127-month holdout |
-| 9 | `experiments/report.py` | Reruns all stages, parses their output, writes `results/report.html` |
+| 9 | `experiments/report.py` | Reruns all stages, parses their output, writes `results/report.html` and `results/report.pdf` |
 
 Dependencies: stages 1-8 all read the tidied series from `data/raw/` via
 `src/acquire.py`; stages 2, 3, 6, 7 use annual means, stages 4, 5, 8 use
@@ -103,9 +103,13 @@ cannot drift from what the stages compute. Plots are written to
 
 ```bash
 pip install -r requirements.txt
-python experiments/report.py     # runs all stages, regenerates plots and the report
+python experiments/report.py     # runs all stages, regenerates plots, HTML and PDF report
 python experiments/trend.py      # any single stage on its own
 ```
+
+The report stage prints the HTML from the parsed stage output and, if
+headless Chrome or Edge is installed on the system, prints `report.pdf` from
+that HTML as well. No Python PDF dependency is required.
 
 ## 8. Stage 8 - forecasting setup and results
 
@@ -163,3 +167,7 @@ this single holdout and the fixed configurations.
 - 2025-08-19: Public-release cleanup - removed unused exoplanet modules
   (`src/evaluation.py`, `src/models.py`), ASCII-only sources and docs,
   README rewrite, `.gitignore` and `requirements.txt` updated.
+- 2025-08-19: `experiments/report.py` now also prints a PDF copy
+  (`results/report.pdf`) from the generated HTML via headless Chrome/Edge
+  when one is installed; no new Python dependency. README and this log
+  updated to document both outputs.

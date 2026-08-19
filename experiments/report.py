@@ -3,6 +3,8 @@
 Runs every stage experiment (regenerating plots + numbers), parses the key
 figures straight from their stdout (no transcription drift), embeds the plots
 as base64, and writes results/report.html with formal per-figure analysis.
+A PDF copy (results/report.pdf) is printed from the HTML via headless
+Chrome/Edge when one is installed; otherwise only the HTML is produced.
 
 Run:  .venv/Scripts/python experiments/report.py   (~2-3 min: reruns forecast)
 """
@@ -10,6 +12,7 @@ import base64
 import re
 import subprocess
 import sys
+import tempfile
 from datetime import date
 from pathlib import Path
 
@@ -585,3 +588,53 @@ REPORT.write_text(f"<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'>"
                   f"<style>{CSS}</style></head><body>{BODY}</body></html>",
                   encoding="utf-8")
 print(f"Wrote {REPORT} ({REPORT.stat().st_size / 1e6:.1f} MB)")
+
+# --- PDF copy via headless Chrome/Edge (skipped if no browser is found) -----
+PDF = REPO / "results" / "report.pdf"
+PRINT_CSS = """
+@page { size: A4; margin: 18mm 16mm; }
+html, body { margin: 0; padding: 0; }
+* { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+figure, table, .abstract { break-inside: avoid; page-break-inside: avoid; }
+h1, h2, h3 { break-after: avoid; page-break-after: avoid; }
+img { max-width: 100%; }
+"""
+
+
+def find_browser():
+    candidates = [
+        r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+        r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+        r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+    ]
+    return next((p for p in candidates if Path(p).exists()), None)
+
+
+def make_pdf():
+    browser = find_browser()
+    if browser is None:
+        print("No Chrome/Edge found; skipping PDF output (report.html is unchanged)")
+        return
+    html = REPORT.read_text(encoding="utf-8")
+    html = html.replace("</head>", f"<style>{PRINT_CSS}</style></head>", 1)
+    with tempfile.TemporaryDirectory() as td:
+        src = Path(td) / "report.html"
+        src.write_text(html, encoding="utf-8")
+        out = Path(td) / "report.pdf"
+        for headless in ("--headless=new", "--headless"):
+            cmd = [browser, headless, "--disable-gpu", "--no-pdf-header-footer",
+                   f"--print-to-pdf={out}", str(src)]
+            subprocess.run(cmd, timeout=180, capture_output=True)
+            if out.exists() and out.stat().st_size > 100_000:
+                break
+            out.unlink(missing_ok=True)
+        if out.exists() and out.stat().st_size > 100_000:
+            out.replace(PDF)
+            print(f"Wrote {PDF} ({PDF.stat().st_size / 1e6:.1f} MB)")
+        else:
+            print("PDF generation failed (browser produced no output); "
+                  "report.html is unchanged")
+
+
+make_pdf()
