@@ -160,26 +160,35 @@ prog = Progress(len(series) * len(models) + 1, desc="Forecast")
 rows = []
 COLORS = {"ARIMA": "#c44e52", "XGBoost": "#2a7f62", "LSTM": "#6a51a3",
           "persistence": "0.5"}
-fig, axes = plt.subplots(1, 2, figsize=(13, 4.8))
-for ax, (name, s) in zip(axes, series.items()):
+fig, axes = plt.subplots(2, 2, figsize=(13, 8.2))
+for col, (name, s) in enumerate(series.items()):
     tr, te = split_series(s)
     horizon = pd.date_range(SPLIT, periods=len(te), freq="MS")
-    ax.plot(s.index, s.values, lw=0.4, color="0.75", label="observed (train)")
-    ax.plot(horizon, te, lw=1.6, color="0.1", label="observed (test)")
+    preds = {}
     for mname, fit in models.items():
         pred = fit(tr, len(te))
         mae, rmse = mae_rmse(te, pred)
         rows.append({"series": name, "model": mname, "mae": round(mae, 3),
                      "rmse": round(rmse, 3), "n_test": len(te)})
-        ls = "--" if mname == "persistence" else "-"
-        ax.plot(horizon, pred, lw=1.3, color=COLORS[mname], ls=ls,
-                label=f"{mname} (MAE {mae:.2f})")
+        preds[mname] = (pred, mae)
         prog.update()
-    ax.axvline(pd.Timestamp(SPLIT), color="0.4", ls=":", lw=1)
-    ax.set_xlim(pd.Timestamp("2000-01-01"), s.index.max())
-    ax.set_title(name, fontsize=11)
-    ax.legend(fontsize=8, ncol=3, loc="upper left")
-    ax.set_xlabel("Year")
+    for row, xlim in ((0, "2000-01-01"), (1, "2014-01-01")):
+        ax = axes[row, col]
+        ax.plot(s.index, s.values, lw=0.4, color="0.75",
+                label="observed (train)" if row == 0 else None)
+        ax.plot(horizon, te, lw=1.6, color="0.1",
+                label="observed (test)" if row == 0 else None)
+        for mname, (pred, mae) in preds.items():
+            ax.plot(horizon, pred, lw=1.3, color=COLORS[mname],
+                    ls="--" if mname == "persistence" else "-",
+                    label=f"{mname} (MAE {mae:.2f})" if row == 0 else None)
+        ax.axvline(pd.Timestamp(SPLIT), color="0.4", ls=":", lw=1)
+        ax.set_xlim(pd.Timestamp(xlim), s.index.max())
+        ax.set_title(f"{name} - forecast detail" if row == 1 else name, fontsize=11)
+        if row == 0:
+            ax.legend(fontsize=8, ncol=3, loc="upper left")
+axes[1, 0].set_xlabel("Year")
+axes[1, 1].set_xlabel("Year")
 
 results = pd.DataFrame(rows)
 print("=== Stage 8: multi-step forecasts, test 2016-01 -> end ===")

@@ -139,11 +139,14 @@ img{border:1px solid #ccc;border-radius:2px;max-width:100%}
 table{border-collapse:collapse;margin:1.2em auto;font-size:.9em}
 caption{caption-side:top;font-size:.85em;color:#333;margin-bottom:.4em;
    font-family:'Segoe UI',system-ui,sans-serif}
-th,td{border:1px solid #999;padding:.35em .75em;text-align:right}
+th,td{border:1px solid #999;padding:.35em .75em;text-align:center}
 th{background:#f0f2f4;font-family:'Segoe UI',system-ui,sans-serif;font-weight:600}
-td:first-child{text-align:left}
+caption{caption-side:top;font-size:.85em;color:#333;margin-bottom:.4em;text-align:center;
+   font-family:'Segoe UI',system-ui,sans-serif}
 pre{background:#ffffff;border:1px solid #ccc;padding:.7em;font-size:.8em;
    overflow-x:auto;line-height:1.4}
+.roadmap{border:1px solid #bbb;border-radius:4px;background:#fff;padding:.9em 1.6em;
+   margin:1.5em 0;line-height:2.1;text-align:center;font-size:.93em}
 .note{font-size:.88em;color:#444}
 """
 
@@ -151,9 +154,7 @@ pre{background:#ffffff;border:1px solid #ccc;padding:.7em;font-size:.8em;
 BODY = f"""
 <h1>Three Records of a Changing Planet</h1>
 <p class="subtitle">A reproducible time-series analysis of the NASA GISTEMP temperature
-record, the NOAA Mauna Loa CO2 record, and the SILSO sunspot record. Generated
-{date.today().isoformat()} by <code>experiments/report.py</code>; every figure, table and
-number is produced by the corresponding stage script.</p>
+record, the NOAA Mauna Loa CO2 record, and the SILSO sunspot record.</p>
 
 <div class="abstract"><b>Abstract.</b> We analyse three real, publicly available climate
 time series: 146 years of global land&ndash;ocean temperature anomaly (NASA GISTEMP),
@@ -193,6 +194,10 @@ results stage by stage, each with the corresponding figure, table, and interpret
 Section 6 discusses limitations, Section 7 states the conclusions, and Section 8 documents
 reproducibility.</p>
 
+<div class="roadmap">The report is organised as follows.<br/>
+Section 2 describes the data and their provenance &nbsp;&middot;&nbsp; Section 3 summarises the methods in plain language &nbsp;&middot;&nbsp; Section 4 documents the forecasting models, their configuration, and the rationale for each choice<br/>
+Section 5 presents the results stage by stage, each with its figure, table, and interpretation &nbsp;&middot;&nbsp; Section 6 discusses limitations &nbsp;&middot;&nbsp; Section 7 states the conclusions &nbsp;&middot;&nbsp; Section 8 documents reproducibility</div>
+
 <h2>2. Data and provenance</h2>
 <table>
 <tr><th>Dataset</th><th>Source</th><th>Coverage</th><th>Scientific role</th></tr>
@@ -208,27 +213,33 @@ modified by analysis code. GISTEMP reports the most recent months (from 2026-08)
 missing; these are excluded wherever they would affect a calculation.</p>
 
 <h2>3. Methods</h2>
-<p><b>Theil&ndash;Sen slope.</b> A robust trend estimator: the median of the slopes of all
-pairs of points. It is far less sensitive to outliers than ordinary least squares.</p>
-<p><b>Mann&ndash;Kendall test.</b> The standard non-parametric test for monotonic trend;
-the p-value quantifies the probability of observing the pattern under a null hypothesis of
-no trend. Every trend estimate in Section 5 is reported with its significance.</p>
-<p><b>STL decomposition.</b> Splits a monthly series into trend, seasonal, and residual
-components by locally weighted smoothing (Loess), permitting each component to be analysed
-separately.</p>
-<p><b>Fourier periodogram.</b> Estimates the spectral power of the series as a function of
-period; the dominant peak identifies the principal cycle. A Hann window and linear
+<p>Trend estimation and significance testing follow the standard climatological toolkit.
+The trend in each series is estimated with the Theil&ndash;Sen estimator &mdash; the median
+of the slopes of all pairs of observations &mdash; which resists the influence of outliers
+far better than ordinary least squares. Its significance is assessed with the
+Mann&ndash;Kendall test, the standard non-parametric test for monotonic trend; the
+associated p-value quantifies the probability of observing the pattern under a null
+hypothesis of no trend. Every trend estimate in Section 5 is reported with its 95%
+confidence interval and p-value, so that each claim carries its significance rather than a
+bare slope.</p>
+<p>The structure of the series is characterised with two further tools. STL decomposition
+splits a monthly series into trend, seasonal, and residual components by locally weighted
+smoothing (Loess), allowing each component to be analysed separately; it is applied to the
+CO2 record to separate the secular rise from the annual cycle and to measure the cycle's
+amplitude over time. Spectral analysis uses the Fourier periodogram &mdash; the power of the
+series as a function of period &mdash; to identify dominant cycles; a Hann window and linear
 detrending are applied before the transform so that the trend does not mask the periodic
-signal.</p>
-<p><b>Partial correlation.</b> The correlation between two variables after the linear
-effect of a third has been removed from both. Used to ask whether temperature tracks CO2
-once the solar cycle is accounted for, and vice versa.</p>
-<p><b>Forecasting protocol.</b> All models are fitted once on data up to December 2015 and
-evaluated exclusively on the 2016&ndash;2026 holdout, with MAE and RMSE against a
-persistence baseline. The models themselves are described in Section 4.</p>
+signal, and the tool is used to recover the solar cycle from the sunspot series.</p>
+<p>Attribution-style questions are addressed with partial correlation, which measures the
+association between two variables after the linear effect of a third has been removed from
+both; this allows the analysis to ask whether temperature tracks CO2 once the solar cycle
+is accounted for, and vice versa. Finally, the forecasting comparison follows a strict
+protocol: every model is fitted once on data up to December 2015 and evaluated exclusively
+on the 2016&ndash;2026 holdout, with MAE and RMSE computed against a persistence baseline.
+The models and their configuration are described in Section 4.</p>
 
 <h2>4. Forecasting models and configuration</h2>
-{table(10, "Forecasting models: configuration and rationale (fixed in advance; nothing tuned on the test period).",
+{table(1, "Forecasting models: configuration and rationale (fixed in advance; nothing tuned on the test period).",
        ["Model", "Configuration", "Rationale"],
        [["SARIMA", "statsmodels ARIMA, d=1, seasonal (0,1,1,12) (airline model); p,q in {0,1,2} chosen by AIC on the training set", "Monthly data require a seasonal term; the airline model is the standard parsimonious fit for strongly seasonal series such as the Keeling curve; AIC gives a principled, data-driven choice of the AR/MA orders"],
         ["XGBoost", "Gradient-boosted trees; 12 monthly lagged differences as features; 200 trees, max depth 4, learning rate 0.05; random_state 42; forecasts built recursively", "Differenced targets prevent the drift that recursive forecasting on levels exhibits; 12 lags capture the annual cycle; the configuration is a standard mid-size boosting setting"],
@@ -252,10 +263,10 @@ optimistic selection.</p>
 <h3>5.1 Overview of the data</h3>
 {img("overview.png", 1, "Overview of the three records: monthly temperature anomaly with annual means (inset red), the Mauna Loa CO2 record, and monthly sunspot numbers.")}
 {img("zoom.png", 2, "Detail: temperature anomaly since 1970, and the CO2 seasonal cycle since 2015.")}
-{table(1, "Summary statistics for the three series (monthly observations).",
+{table(2, "Summary statistics for the three series (monthly observations).",
        ["Series", "n", "Start", "End", "Latest", "Mean", "SD", "Min", "Max"],
        stat_rows)}
-{table(2, "Decadal mean temperature anomalies (&deg;C, 1951&ndash;80 base).",
+{table(3, "Decadal mean temperature anomalies (&deg;C, 1951&ndash;80 base).",
        ["Decade", "Mean anomaly"], decades)}
 <p>The monthly temperature series exhibits substantial short-term variability, yet the
 annual means display a clear secular increase from approximately &minus;0.2 &deg;C in the
@@ -264,17 +275,17 @@ monotonic upward trajectory with a regular annual oscillation &mdash; the season
 of carbon between the atmosphere and the terrestrial biosphere (Figure 2, right panel). The
 sunspot series shows a persistent quasi-periodic modulation on a decadal timescale,
 consistent with the well-documented solar activity cycle (Figure 1, lower panel). Decadal
-temperature means (Table 2) change from &minus;0.21 &deg;C in the 1880s to +1.08 &deg;C in
+temperature means (Table 3) change from &minus;0.21 &deg;C in the 1880s to +1.08 &deg;C in
 the 2020s, a cumulative increase of +1.29 &deg;C that foreshadows the formal trend analysis
 of Section 4.2.</p>
 
 <h3>5.2 Trend analysis</h3>
 {img("trends.png", 3, "Annual means with fitted Theil&ndash;Sen trend lines for temperature (left) and CO2 (right).")}
-{table(3, "Theil&ndash;Sen slopes on annual means, with 95% confidence intervals and Mann&ndash;Kendall statistics.",
+{table(4, "Theil&ndash;Sen slopes on annual means, with 95% confidence intervals and Mann&ndash;Kendall statistics.",
        ["Series", "n (years)", "Slope (per decade)", "95% CI", "Tau", "p-value"],
        [["GISTEMP temperature anomaly (&deg;C)", "147", temp_slope, temp_ci, "0.733", temp_p],
         ["Mauna Loa CO2 (ppm)", "69", co2_slope, co2_ci, "1.000", co2_p]])}
-<p>Table 3 reports the trend estimates and their significance. Temperature rose at
+<p>Table 4 reports the trend estimates and their significance. Temperature rose at
 {temp_slope} &deg;C per decade over 1880&ndash;2026 (95% CI {temp_ci}; p = {temp_p}); the
 probability of such a pattern under a null hypothesis of no trend is on the order of
 10<sup>&minus;39</sup>, so the warming signal cannot plausibly be attributed to sampling
@@ -285,12 +296,12 @@ robust to the influence of individual extreme years.</p>
 
 <h3>5.3 Breakpoint analysis: acceleration after 1970</h3>
 {img("breakpoint.png", 4, "Theil&ndash;Sen fits applied separately to the pre-1970 and post-1970 segments of the temperature record.")}
-{table(4, "Warming rates for the two segments and the full record.",
+{table(5, "Warming rates for the two segments and the full record.",
        ["Segment", "n (years)", "Slope (&deg;C/decade)", "95% CI", "p-value"],
        [["pre-1970", "90", pre_slope, pre_ci, pre_p],
         ["post-1970", "57", post_slope, post_ci, post_p]])}
 <p>The warming rate increased from {pre_slope} &deg;C per decade before 1970 to
-{post_slope} &deg;C per decade after 1970 (Table 4). Because the 95% confidence intervals
+{post_slope} &deg;C per decade after 1970 (Table 5). Because the 95% confidence intervals
 of the two estimates do not overlap, the acceleration &mdash; {accel} &deg;C per decade per
 decade &mdash; is statistically significant. The change in gradient at the break is readily
 apparent in Figure 4. The breakpoint (1970) was specified before examining the data rather
@@ -300,7 +311,7 @@ data-dependent selection.</p>
 <h3>5.4 Seasonal decomposition of the CO2 record</h3>
 {img("stl_co2.png", 5, "STL decomposition of monthly Mauna Loa CO2 into observed, trend, seasonal, and residual components.")}
 {img("co2_seasonal_amplitude.png", 6, "Annual peak-to-trough amplitude of the seasonal component, with fitted trend.")}
-{table(5, "Growth of the seasonal cycle amplitude and residual diagnostics.",
+{table(6, "Growth of the seasonal cycle amplitude and residual diagnostics.",
        ["Quantity", "Estimate", "95% CI", "p-value"],
        [["Amplitude growth (ppm/decade)", amp_slope, amp_ci, amp_p],
         ["Residual SD (ppm)", resid_std, "&mdash;", "&mdash;"]])}
@@ -311,7 +322,7 @@ oscillation whose amplitude increases over the record; and the residual is small
 indicating that the additive trend-plus-seasonal model captures essentially all of the
 variance. The seasonal amplitude &mdash; the annual peak-to-trough difference of the
 seasonal component &mdash; increased by {amp_slope} ppm per decade (95% CI {amp_ci};
-p = {amp_p}; Table 5, Figure 6). <i>Interpretation:</i> the growing amplitude is consistent
+p = {amp_p}; Table 6, Figure 6). <i>Interpretation:</i> the growing amplitude is consistent
 with an intensifying seasonal exchange of carbon between the atmosphere and the biosphere,
 for example through longer growing seasons or CO2 fertilisation; the decomposition
 documents the amplitude change but does not identify a mechanism.</p>
@@ -319,27 +330,27 @@ documents the amplitude change but does not identify a mechanism.</p>
 <h3>5.5 Periodicity of solar activity</h3>
 {img("sunspot_periodicity.png", 7, "Monthly sunspot numbers (upper) and the FFT periodogram of the detrended series (lower), with the dominant peak marked.")}
 {img("sunspot_cycle_evolution.png", 8, "Normalised periodogram computed over successive half-century windows, showing the wandering of the peak.")}
-{table(6, "Dominant period of solar activity.",
+{table(7, "Dominant period of solar activity.",
        ["Quantity", "Value"],
        [["Dominant period (years)", peak],
         ["Half-power span (years)", f"{span_lo}&ndash;{span_hi}"]])}
 <p>The periodogram of the detrended sunspot series exhibits a single dominant spectral peak
 at {peak} years (Figure 7, lower panel), recovering the well-known Schwabe cycle from raw
 monthly counts without prior knowledge. The half-power span of the peak is
-{span_lo}&ndash;{span_hi} years (Table 6). Figure 8 shows that the peak location varies
+{span_lo}&ndash;{span_hi} years (Table 7). Figure 8 shows that the peak location varies
 between approximately 9 and 13 years across successive half-century windows, reflecting the
 known irregularity of the solar cycle; the nominal 11-year period is therefore best read as
 a mean value rather than a strict constant.</p>
 
 <h3>5.6 Attribution: CO2 versus solar variability</h3>
 {img("attribution.png", 9, "Left: temperature versus CO2, coloured by sunspot number. Right: temperature versus sunspots, coloured by CO2. Annual means, 1958&ndash;2026.")}
-{table(7, "Simple and partial Pearson correlations (n = 69 annual observations, 1958&ndash;2026).",
+{table(8, "Simple and partial Pearson correlations (n = 69 annual observations, 1958&ndash;2026).",
        ["Correlation", "r", "p-value"],
        [["Temperature &ndash; CO2 (simple)", r_tc_plain, p_tc_plain],
         ["Temperature &ndash; sunspots (simple)", r_ts_plain, p_ts_plain],
         ["Temperature &ndash; CO2 | sunspots (partial)", r_tc_part, p_tc_part],
         ["Temperature &ndash; sunspots | CO2 (partial)", r_ts_part, p_ts_part]])}
-<p>The temperature&ndash;CO2 correlation is {r_tc_plain} (p = {p_tc_plain}) and remains
+<p>Table 8 reports the simple and partial correlations. The temperature&ndash;CO2 correlation is {r_tc_plain} (p = {p_tc_plain}) and remains
 essentially unchanged when the solar cycle is partialled out ({r_tc_part}, p = {p_tc_part});
 the CO2 signal therefore does not depend on solar activity. By contrast, the raw
 temperature&ndash;sunspot correlation is negligible ({r_ts_plain}, p = {p_ts_plain}), and
@@ -352,9 +363,9 @@ descriptive; they do not by themselves establish causation.</p>
 
 <h3>5.7 Extreme years and documented climate events</h3>
 {img("events.png", 10, "Annual temperature anomalies with fitted trend, the &plusmn;1.5&sigma; band of detrended values, and flagged outlier years.")}
-{table(8, "Years whose detrended anomalies exceed 1.5 standard deviations, with documented event matches (interpretation).",
+{table(9, "Years whose detrended anomalies exceed 1.5 standard deviations, with documented event matches (interpretation).",
        ["Year", "z-score", "Event match"], event_rows)}
-<p>Table 8 lists the years whose anomalies, after removal of the secular trend, exceed 1.5
+<p>Table 9 lists the years whose anomalies, after removal of the secular trend, exceed 1.5
 standard deviations. Three flags correspond to documented events: 1964 (cooling following
 the 1963 Agung eruption), and 2016 and 2024 (El Ni&ntilde;o years). The remaining flags
 fall in the 1880s, a period of lower data quality and higher relative noise. Equally
@@ -367,8 +378,8 @@ apparent misses are attributable to documented physical offsets rather than to a
 the detection method.</p>
 
 <h3>5.8 Forecasting comparison</h3>
-{img("forecast.png", 11, "Observed series (grey) with 2016&ndash;2026 forecasts from the three models and the persistence baseline; the dotted line marks the train/test boundary.")}
-{table(9, "Holdout performance (test period 2016-01 to 2026; MAE and RMSE, with improvement relative to the persistence baseline).",
+{img("forecast.png", 11, "Forecasting comparison. Upper row: context since 2000. Lower row: forecast detail since 2014 &mdash; observed test values in black, model forecasts coloured, persistence dashed; the dotted line marks the train/test boundary.")}
+{table(10, "Holdout performance (test period 2016-01 to 2026; MAE and RMSE, with improvement relative to the persistence baseline).",
        ["Series / model", "MAE", "RMSE", "vs persistence"],
        [["CO2 &mdash; persistence", persist_co2, "&mdash;", "&mdash;"],
         ["CO2 &mdash; SARIMA", mae_co2["ARIMA"][0], mae_co2["ARIMA"][1], f"{mae_co2['ARIMA'][2]}%"],
@@ -379,7 +390,7 @@ the detection method.</p>
         ["Temperature &mdash; XGBoost", mae_temp["XGBoost"][0], mae_temp["XGBoost"][1], f"{mae_temp['XGBoost'][2]}%"],
         ["Temperature &mdash; LSTM", mae_temp["LSTM"][0], mae_temp["LSTM"][1], f"{mae_temp['LSTM'][2]}%"]])}
 <p>All models were fitted on data up to December 2015 and evaluated exclusively on the
-2016&ndash;2026 holdout (Table 9, Figure 11). For CO2, every method outperforms the
+2016&ndash;2026 holdout (Table 10, Figure 11). For CO2, every method outperforms the
 persistence baseline by a substantial margin &mdash; SARIMA (MAE {mae_co2['ARIMA'][0]} ppm,
 an improvement of {mae_co2['ARIMA'][2]}%), XGBoost ({mae_co2['XGBoost'][0]} ppm,
 {mae_co2['XGBoost'][2]}%), and LSTM ({mae_co2['LSTM'][0]} ppm, {mae_co2['LSTM'][2]}%)
@@ -394,33 +405,32 @@ those models consequently degrades out-of-sample performance. Model configuratio
 fixed in advance and are documented in <code>docs/process.md</code> &sect;8.</p>
 
 <h2>6. Discussion and limitations</h2>
-<p><b>Correlation and causation.</b> The attribution analysis shows that the two candidate
-drivers separate cleanly in the data, but partial correlation cannot establish that CO2
-causes warming; it demonstrates consistency with that hypothesis and inconsistency with a
-dominant solar explanation.</p>
-<p><b>Single pre-specified breakpoint.</b> The 1970 breakpoint was specified before
-analysis; scanning for the best-fitting breakpoint would inflate the significance of the
+<p>The principal caveat concerns the attribution analysis, which is descriptive rather than
+causal: partial correlation shows that the two candidate drivers separate cleanly in the
+data, but it cannot establish that CO2 causes warming &mdash; it demonstrates consistency
+with that hypothesis and inconsistency with a dominant solar explanation. The breakpoint
+analysis similarly rests on a single breakpoint (1970) that was specified before examining
+the data; scanning for the best-fitting breakpoint would inflate the significance of the
 acceleration.</p>
-<p><b>Single fixed-origin forecast.</b> The forecasting comparison rests on one
-train/test split. A rolling-origin evaluation over multiple windows would provide more
-robust model rankings at greater computational cost.</p>
-<p><b>Preliminary observations.</b> Recent GISTEMP values are subject to revision, and the
-final months of the record are reported as missing and were excluded.</p>
-<p><b>Fixed hyperparameters.</b> Model configurations were fixed rather than tuned; a
-tuned LSTM might perform better on CO2, but tuning on the test period would invalidate the
+<p>The forecasting comparison rests on a single train/test split; a rolling-origin
+evaluation over multiple windows would provide more robust model rankings at greater
+computational cost. Model configurations were fixed rather than tuned &mdash; a tuned LSTM
+might perform better on CO2, but tuning on the test period would invalidate the
 comparison.</p>
+<p>Finally, the data themselves impose limits. Recent GISTEMP values are preliminary and
+subject to revision, and the final months of the record are reported as missing and were
+excluded from the analysis.</p>
 
 <h2>7. Conclusions</h2>
-<p><b>(1)</b> Warming is real, highly significant (p &sim; 10<sup>&minus;39</sup>), and
-<b>accelerating</b>: {temp_slope} &deg;C per decade over the full record, {post_slope}
-&deg;C per decade since 1970, with non-overlapping confidence intervals.</p>
-<p><b>(2)</b> CO2 is rising at {co2_slope} ppm per decade, and the amplitude of its
+<p>Four results follow from the analyses. First, warming is real, highly significant
+(p &sim; 10<sup>&minus;39</sup>), and accelerating: {temp_slope} &deg;C per decade over the
+full record and {post_slope} &deg;C per decade since 1970, with non-overlapping confidence
+intervals. Second, CO2 is rising at {co2_slope} ppm per decade, and the amplitude of its
 seasonal cycle is growing ({amp_slope} ppm per decade), consistent with an intensifying
-seasonal carbon exchange.</p>
-<p><b>(3)</b> The solar cycle is a well-defined {peak}-year oscillation, but it does not
-explain the warming: the temperature&ndash;CO2 association survives removal of the solar
-cycle, whereas the residual solar association after controlling for CO2 is small.</p>
-<p><b>(4)</b> On a ten-year holdout, the classical seasonal ARIMA model outperforms both
+seasonal carbon exchange. Third, the solar cycle is a well-defined {peak}-year oscillation,
+yet it does not explain the warming: the temperature&ndash;CO2 association survives removal
+of the solar cycle, whereas the residual solar association after controlling for CO2 is
+small. Fourth, on a ten-year holdout the classical seasonal ARIMA model outperforms both
 XGBoost and a small LSTM on both series; machine learning adds value only where learnable
 structure exists beyond the trend (CO2), and even there it does not match SARIMA.</p>
 
