@@ -2,8 +2,7 @@
 
 Splits monthly Mauna Loa CO2 into Trend + Seasonal + Residual (STL), then
 measures the annual seasonal amplitude (max-min of the seasonal component
-each year) and tests whether the cycle is growing - a fingerprint of the
-biosphere's accelerating carbon uptake.
+each year) and tests whether the cycle is growing.
 
 Run:  .venv/Scripts/python experiments/stl_co2.py
 """

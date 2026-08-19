@@ -1,8 +1,7 @@
 """Stage 5: periodicity - find the ~11-year solar cycle in sunspot numbers.
 
 Evenly sampled monthly SSN since 1749 -> windowed FFT periodogram on the
-detrended series. The dominant peak should land on the ~11-year Schwabe cycle
-(same period-finding skill as exoplanet transit searches, simpler sampling).
+detrended series. The dominant peak should land on the ~11-year Schwabe cycle.
 
 Run:  .venv/Scripts/python experiments/periodicity.py
 """

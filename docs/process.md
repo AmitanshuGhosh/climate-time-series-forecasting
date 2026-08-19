@@ -203,3 +203,7 @@ lag-based ML to exploit beyond what SARIMA already models). Reproduce:
   (research-paper structure: abstract, intro, data, methods, results with
   per-figure plain-English analysis, discussion/limitations, conclusions,
   reproducibility). One command regenerates everything.
+- 2025-08-19: Repository cleanup for public release - removed leftover
+  exoplanet modules (`src/evaluation.py`, `src/models.py`, unused by the
+  climate analysis), trimmed two docstrings, rewrote `README.md` with an
+  overview/methods/results/reproduction/limitations structure.
