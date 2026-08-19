@@ -166,13 +166,16 @@ counts (SILSO). Using robust trend estimation with significance testing, breakpo
 analysis, seasonal&ndash;trend decomposition (STL), Fourier spectral analysis, partial
 correlation, and a three-model forecasting comparison, we obtain the following results.
 (1) Global temperature rose at {temp_slope} &deg;C per decade over the full record
-(95% CI {temp_ci}; Mann&ndash;Kendall p = {temp_p}), with statistically significant
+(95% CI {temp_ci}; Mann&ndash;Kendall p = {temp_p} under independent observations;
+autocorrelation-robust check in &sect;5.2), with statistically significant
 acceleration after 1970 (post-1970 rate {post_slope} &deg;C per decade). (2) CO2 rose at
 {co2_slope} ppm per decade (CI {co2_ci}; p = {co2_p}), and the amplitude of its seasonal
 cycle increased by {amp_slope} ppm per decade (CI {amp_ci}; p = {amp_p}). (3) Spectral
-analysis recovers a dominant solar period of {peak} years. (4) Partial correlations
-associate the temperature rise predominantly with CO2 (partial r&sup2; = 0.94) and find
-at most a small residual solar association (partial r&sup2; = 0.12). (5) On a 127-month
+analysis recovers a dominant solar period of {peak} years. (4) The annual
+temperature&ndash;CO2 association is strong (r = +0.97) and persists after controlling for
+the solar cycle (partial r = +0.97; residual r&sup2; = 0.94), whereas the residual solar
+association is small (partial r = +0.35; r&sup2; = 0.12) and not robust to
+first-differencing. (5) On a 127-month
 holdout (2016-01 to 2026-07), a seasonal ARIMA model outperforms both XGBoost and a small
 LSTM on both series; all three methods beat a persistence baseline for CO2, but only ARIMA
 does so for temperature. All claims are traceable to the scripts listed in Section 8.</div>
@@ -337,7 +340,7 @@ of Section 4.2.</p>
 
 <h3>5.2 Trend analysis</h3>
 {img("trends.png", 3, "Annual means with fitted Theil&ndash;Sen trend lines for temperature (left) and CO2 (right).")}
-{table(5, "Theil&ndash;Sen slopes on annual means, with 95% confidence intervals and Mann&ndash;Kendall statistics.",
+{table(5, "Theil&ndash;Sen slopes on annual means, with 95% confidence intervals and Mann&ndash;Kendall statistics; p-values assume independent observations (robustness check in &sect;5.2).",
        ["Series", "n (years)", "Slope (per decade)", "95% CI", "Tau", "p-value"],
        [["GISTEMP temperature anomaly (&deg;C)", "147", temp_slope, temp_ci, "0.733", temp_p],
         ["Mauna Loa CO2 (ppm)", "69", co2_slope, co2_ci, "1.000", co2_p]])}
@@ -363,7 +366,7 @@ the correction.</p>
 
 <h3>5.3 Breakpoint analysis: acceleration after 1970</h3>
 {img("breakpoint.png", 4, "Theil&ndash;Sen fits applied separately to the pre-1970 and post-1970 segments of the temperature record.")}
-{table(6, "Warming rates for the two segments and the full record.",
+{table(6, "Warming rates for the two segments and the full record; p-values assume independent observations (robustness check in &sect;5.2).",
        ["Segment", "n (years)", "Slope (&deg;C/decade)", "95% CI", "p-value"],
        [["pre-1970", "90", pre_slope, pre_ci, pre_p],
         ["post-1970", "57", post_slope, post_ci, post_p]])}
@@ -371,9 +374,10 @@ the correction.</p>
 {post_slope} &deg;C per decade after 1970 (Table 6). Because the 95% confidence intervals
 of the two estimates do not overlap, the acceleration &mdash; {accel} &deg;C per decade per
 decade &mdash; is statistically significant. The change in gradient at the break is readily
-apparent in Figure 4. The breakpoint (1970) was specified before examining the data rather
-than chosen to maximise the contrast, so the significance statement is not inflated by
-data-dependent selection.</p>
+apparent in Figure 4. The breakpoint (1970) follows the project plan
+(<code>docs/process.md</code>), which fixes the research question as the warming rate
+before and after ~1970; a single split was examined and no alternative candidate years
+were scanned, so the significance statement is not inflated by data-dependent selection.</p>
 
 <h3>5.4 Seasonal decomposition of the CO2 record</h3>
 {img("stl_co2.png", 5, "STL decomposition of monthly Mauna Loa CO2 into observed, trend, seasonal, and residual components.")}
@@ -393,7 +397,7 @@ p = {amp_p}; Table 7, Figure 6).</p>
 <p>This growth has a natural physical reading. The seasonal amplitude is, in effect, the
 annual "breath" of the terrestrial biosphere: CO2 falls through the northern summer as
 plants draw it down, and rises again through the winter as respiration and decomposition
-return it to the atmosphere. An amplitude that grows from year to year therefore points to
+return it to the atmosphere. An amplitude that grows from year to year is consistent with
 an intensifying seasonal carbon exchange &mdash; consistent, for example, with longer growing
 seasons or CO2 fertilisation of photosynthesis. The decomposition quantifies the change but
 does not, by itself, identify which of these mechanisms dominates; that would require
@@ -480,20 +484,20 @@ the detection method.</p>
         ["Temperature &mdash; XGBoost", mae_temp["XGBoost"][0], mae_temp["XGBoost"][1], f"{mae_temp['XGBoost'][2]}%"],
         ["Temperature &mdash; LSTM", mae_temp["LSTM"][0], mae_temp["LSTM"][1], f"{mae_temp['LSTM'][2]}%"]])}
 <p>All models were fitted on data up to December 2015 and evaluated exclusively on the
-127-month holdout 2016-01 to 2026-07 (Table 11, Figure 11). For CO2, every method
+127-month holdout 2016-01 to 2026-07 (Table 11, Figure 11); all rankings refer to
+this single holdout. For CO2, every method
 outperforms the persistence baseline by a substantial margin &mdash; SARIMA (MAE
 {mae_co2['ARIMA'][0]} ppm, an improvement of {mae_co2['ARIMA'][2]}%), XGBoost
 ({mae_co2['XGBoost'][0]} ppm, {mae_co2['XGBoost'][2]}%), and LSTM ({mae_co2['LSTM'][0]}
-ppm, {mae_co2['LSTM'][2]}%) &mdash; reflecting the strongly learnable trend and seasonality
+ppm, {mae_co2['LSTM'][2]}%) &mdash; consistent with the strong trend and seasonality
 of the series. For temperature, the ordering differs: only SARIMA improves on the baseline
 (MAE {mae_temp['ARIMA'][0]} &deg;C, {mae_temp['ARIMA'][2]}%), whereas both
 machine-learning models underperform it (XGBoost {mae_temp['XGBoost'][0]} &deg;C; LSTM
-{mae_temp['LSTM'][0]} &deg;C). This contrast is consistent with the structure of the
-series: the temperature record behaves approximately as a random walk about a slow trend,
-leaving little additional structure for lag-based models to exploit, and the additional
-flexibility of those models consequently degrades out-of-sample performance. Model
-configurations were fixed in advance and are documented in <code>docs/process.md</code>
-&sect;8.</p>
+{mae_temp['LSTM'][0]} &deg;C). This contrast is consistent with the different character
+of the two series &mdash; CO2 combines a strong trend with a pronounced seasonal cycle,
+whereas temperature behaves approximately as a random walk about a slow trend &mdash; but the
+experiment itself establishes only the measured error ranking. Model configurations were
+fixed in advance and are documented in <code>docs/process.md</code> &sect;8.</p>
 <p>Figure 11 also makes clear why the temperature forecasts do not track the test record
 closely. Two distinct effects are at work. The first is irreducible: the observed test
 values swing between roughly 0.6 and 1.5 &deg;C from month to month, because monthly
@@ -516,9 +520,10 @@ external predictors.</p>
 causal: partial correlation shows that the two candidate drivers separate cleanly in the
 data, but it cannot establish that CO2 causes warming &mdash; it demonstrates consistency
 with that hypothesis and inconsistency with a dominant solar explanation. The breakpoint
-analysis similarly rests on a single breakpoint (1970) that was specified before examining
-the data; scanning for the best-fitting breakpoint would inflate the significance of the
-acceleration.</p>
+analysis rests on a single split at 1970, fixed by the project plan (which specifies the
+question as the warming rate before and after ~1970); because the plan and the results are
+contemporaneous in the project record, strict pre-specification of the exact year cannot
+be independently verified, although no evidence of data-driven selection was found.</p>
 <p>The forecasting comparison rests on a single train/test split; a rolling-origin
 evaluation over multiple windows would provide more robust model rankings at greater
 computational cost. Model configurations were fixed rather than tuned &mdash; a tuned LSTM
@@ -546,14 +551,17 @@ after an effective-sample-size correction; Section 5.2).</li>
 <li><b>The carbon cycle is intensifying.</b> CO2 is rising at {co2_slope} ppm per decade
 and the amplitude of its seasonal cycle is growing ({amp_slope} ppm per decade), a change
 consistent with an intensifying seasonal carbon exchange.</li>
-<li><b>Solar variability cannot explain the warming.</b> The solar cycle is a well-defined
-{peak}-year oscillation, yet the temperature&ndash;CO2 association survives removal of the
-solar cycle (partial r&sup2; = 0.94) while the residual solar association after
-controlling for CO2 is small (r&sup2; = 0.12) and does not survive first-differencing.</li>
+<li><b>Solar variability is unlikely to be the dominant explanation for the warming.</b>
+The solar cycle is a well-defined {peak}-year oscillation, yet the temperature&ndash;CO2
+association survives removal of the solar cycle (partial r = +0.97) while the residual
+solar association after controlling for CO2 is small (partial r = +0.35; r&sup2; = 0.12),
+does not survive first-differencing, and is not robust given the limited effective sample
+size.</li>
 <li><b>SARIMA produced the lowest forecast error.</b> Under the fixed configurations and
-the 127-month holdout, SARIMA outperforms both XGBoost and a small LSTM on both series;
-machine learning adds value only where learnable structure exists beyond the trend (CO2),
-and even there it does not match SARIMA.</li>
+the single 127-month holdout, SARIMA outperformed both XGBoost and a small LSTM on both
+series: for CO2, XGBoost and LSTM beat persistence but not SARIMA; for temperature, they
+performed substantially worse than persistence. Rankings are conditional on this holdout
+and configuration set.</li>
 </ul>
 <p>Taken together, the three records tell a coherent story. The warming of the past century
 is real, statistically unambiguous, and accelerating; it is strongly associated with the
