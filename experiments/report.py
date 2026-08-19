@@ -581,7 +581,7 @@ modified by analysis code.</p>
 """
 
 REPORT.write_text(f"<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'>"
-                  f"<title>Three Records of a Changing Planet</title>"
+                  f"<title>Global Temperature, Atmospheric CO&#8322;, and Solar Variability: A Reproducible Time-Series Analysis</title>"
                   f"<style>{CSS}</style></head><body>{BODY}</body></html>",
                   encoding="utf-8")
 print(f"Wrote {REPORT} ({REPORT.stat().st_size / 1e6:.1f} MB)")
